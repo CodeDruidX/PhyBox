@@ -162,7 +162,7 @@ class Body:
         self.coords[1]+=self.speed[1]*time
 
     def tick(self,bodys,time):
-        f=self.foreach_interact(bodys)
+        f=self.foreach_interact(bodys,time)
         accel=[f[0]/self.mass,f[1]/self.mass]
         self.speed[0]=self.speed[0]+accel[0]*time
         self.speed[1]=self.speed[1]+accel[1]*time
