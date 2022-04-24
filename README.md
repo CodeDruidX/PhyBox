@@ -43,6 +43,8 @@
 + Так еще они могут сталкиваться...
 
 ![Elastischer_stoß_2D](https://user-images.githubusercontent.com/52743561/164952649-6f1509fb-548b-4419-b81a-1c32afc665ff.gif)
+![image](https://user-images.githubusercontent.com/52743561/164953015-75d4f2cd-39c2-4330-97c2-2a1793b04254.png)
+
 
 # Как это запустить?
 
