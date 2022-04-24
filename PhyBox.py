@@ -13,21 +13,25 @@ def Si(value,unit):
     return value*units[units]
 def proection_to_vector(deltas):
     x_d,y_d=deltas[0],deltas[1]
-    if x_d==0 and y_d>0: direcion=0
+    if x_d==0 and y_d>0: direction=0
 
-    elif x_d==0 and y_d<0: direcion=180
+    elif x_d==0 and y_d<0: direction=180
 
-    elif y_d==0 and x_d>0: direcion=90
+    elif y_d==0 and x_d>0: direction=90
 
-    elif y_d==0 and x_d<0: direcion=-90
+    elif y_d==0 and x_d<0: direction=270
 
-    elif y_d > 0: direcion=degrees(atan(x_d/y_d))
+    elif y_d > 0: direction=degrees(atan(x_d/y_d))
 
-    elif y_d < 0: direcion=degrees(atan(x_d/y_d))+180
+    elif y_d < 0: direction=degrees(atan(x_d/y_d))+180
 
     else: direcion=0
 
-    return (direcion,hypot(x_d,y_d))
+    if direction<0:
+        direction+=360
+    if direction > 360:
+        direction-=360
+    return (direction,hypot(x_d,y_d))
 
 def vector_to_proection(vector):
     dir,hyp=vector[0],vector[1]
@@ -81,6 +85,7 @@ def temp_distribution(body1,body2,time):
     Q=K*S*dT*time
     body1.t+=Q/(body1.mass*body1.heat_capacity)
     body2.t-=Q/(body2.mass*body2.heat_capacity)
+
 def charge_distribution(body1,body2):
     charge1=body1.charge
     charge2=body2.charge
@@ -88,6 +93,20 @@ def charge_distribution(body1,body2):
     V2=(body2.radius**3)*pi*(4/3)
     body1.charge=(charge1+charge2)*(V1/(V1+V2))
     body2.charge=(charge1+charge2)*(V2/(V1+V2))
+
+def bounce(body1,body2):
+    f=proection_to_vector((body2.coords[0]-body1.coords[0],body2.coords[1]-body1.coords[1]))[0]
+    o1,U1=proection_to_vector(body1.speed)
+    o2,U2=proection_to_vector(body2.speed)
+    if f<o1+90 and f>o1-90:
+        _sin=lambda x: sin(radians(x))
+        _cos=lambda x: cos(radians(x))
+        m1=body1.mass #Чувствую, сейчас будет мясо
+        m2=body2.mass
+        U1y=(U1*_cos(o1-f)*(m1-m2)+2*m2*U2*_cos(o2-f)) / (m1+m2)*_cos(f) + U1*_sin(o1-f)*_cos(f+(pi/2))
+        U1x=(U1*_cos(o1-f)*(m1-m2)+2*m2*U2*_cos(o2-f)) / (m1+m2)*_sin(f) + U1*_sin(o1-f)*_sin(f+(pi/2))
+        print(o1,o2,f,U1x,U1y)
+        body1.speed=[U1x,U1y]
 
 class World:
     def __init__(self,frequency):
@@ -139,13 +158,15 @@ class Body:
         self.heat_capacity=heat_capacity
         self.heat_conductivity=heat_conductivity # Теплопроводность, не теплоемкость!
     def info(self):
-        return [self.mass,self.coords,self.speed,self.t,self.charge,self.name]
+        return [self.mass,self.coords,self.speed,self.t,self.charge,self.name,self.radius,self.heat_capacity,self.heat_conductivity]
 
     def interact(self,body,time):
         forces=[]
 
         if check_bodys_are_touch(self,body):
             charge_distribution(self,body)
+            temp_distribution(self,body,time)
+            bounce(self,body)
         forces.append(get_Hewton_gravitation_force(self,body))
         forces.append(get_Coulomb_electrostatic_force(self,body))
         return sum_proections(forces)
