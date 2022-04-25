@@ -25,7 +25,7 @@ def proection_to_vector(deltas):
 
     elif y_d < 0: direction=degrees(atan(x_d/y_d))+180
 
-    else: direcion=0
+    else: direction=0
 
     if direction<0:
         direction+=360
@@ -82,9 +82,14 @@ def temp_distribution(body1,body2,time):
     dT=body2.t-body1.t
     S=min(body1.radius*(2*0.5),body2.radius*(2*0.5))**2
     K=min(body1.heat_conductivity,body2.heat_conductivity)
-    Q=K*S*dT*time
+    Q=(K*S*dT*time)/2
     body1.t+=Q/(body1.mass*body1.heat_capacity)
     body2.t-=Q/(body2.mass*body2.heat_capacity)
+
+def get_collapse_time(body1,body2):
+    t1=(body1.radius+body2.radius)/body1.sound_wave_speed
+    t2=(body1.radius+body2.radius)/body2.sound_wave_speed
+    return min(t1,t2)
 
 def charge_distribution(body1,body2):
     charge1=body1.charge
@@ -105,12 +110,11 @@ def bounce(body1,body2):
         m2=body2.mass
         U1y=(U1*_cos(o1-f)*(m1-m2)+2*m2*U2*_cos(o2-f)) / (m1+m2)*_cos(f) + U1*_sin(o1-f)*_cos(f+(pi/2))
         U1x=(U1*_cos(o1-f)*(m1-m2)+2*m2*U2*_cos(o2-f)) / (m1+m2)*_sin(f) + U1*_sin(o1-f)*_sin(f+(pi/2))
-        print(o1,o2,f,U1x,U1y)
         body1.speed=[U1x,U1y]
 def thermal_expansion(body1):
     native_V=(body1.native_radius**3)*(4/3)*pi
-    new_V=native_V*(1+body1.volume_thermal_expansion_k*(self.t-self.first_t))
-    body1.radius=body1.native_radius+((3/4)*new_V/pi)**(1/3)
+    new_V=native_V*(1+body1.volume_thermal_expansion_k*(body1.t-body1.first_t))
+    body1.radius=((3/4)*new_V/pi)**(1/3)
 
 class World:
     def __init__(self,frequency):
@@ -151,7 +155,7 @@ class World:
 
 
 class Body:
-    def __init__(self,mass,coords,speed,t,charge,name,radius,heat_capacity,heat_conductivity,thermal_expansion_k):
+    def __init__(self,mass,coords,speed,t,charge,name,radius,heat_capacity,heat_conductivity,thermal_expansion_k,local_sound_wave_speed):
         self.mass=mass
         self.coords=coords
         self.speed=speed
@@ -164,25 +168,27 @@ class Body:
         self.heat_capacity=heat_capacity
         self.heat_conductivity=heat_conductivity # Теплопроводность, не теплоемкость!
         self.volume_thermal_expansion_k=thermal_expansion_k # КОЭФФИЦИЕНТ ОБЪЕМНОГО ТЕПЛОВОГО РАСШИРЕНИЯ (не линейного!!!)
+        self.sound_wave_speed=local_sound_wave_speed # Скорость звука в теле
     def info(self):
         return [self.mass,self.coords,self.speed,self.t,self.charge,self.name,self.radius,self.heat_capacity,self.heat_conductivity]
 
-    def interact(self,body,time):
+    def interact(self,body):
         forces=[]
 
         if check_bodys_are_touch(self,body):
+            t=get_collapse_time(self,body)
             charge_distribution(self,body)
-            temp_distribution(self,body,time)
+            temp_distribution(self,body,t)
             bounce(self,body)
-        thermal_expansion(body1)
+        thermal_expansion(self)
         forces.append(get_Hewton_gravitation_force(self,body))
         forces.append(get_Coulomb_electrostatic_force(self,body))
         return sum_proections(forces)
 
-    def foreach_interact(self,bodys,time):
+    def foreach_interact(self,bodys):
         forces=[]
         for i in bodys:
-            forces.append(self.interact(i,time))
+            forces.append(self.interact(i))
         return sum_proections(forces)
 
 
@@ -191,7 +197,7 @@ class Body:
         self.coords[1]+=self.speed[1]*time
 
     def tick(self,bodys,time):
-        f=self.foreach_interact(bodys,time)
+        f=self.foreach_interact(bodys)
         accel=[f[0]/self.mass,f[1]/self.mass]
         self.speed[0]=self.speed[0]+accel[0]*time
         self.speed[1]=self.speed[1]+accel[1]*time
