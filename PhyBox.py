@@ -80,7 +80,7 @@ def get_Coulomb_electrostatic_force(body1,body2):
 
 def temp_distribution(body1,body2,time):
     dT=body2.t-body1.t
-    S=min(body1.radius*(2*0.5),body2.radius*(2*0.5))
+    S=min(body1.radius*(2*0.5),body2.radius*(2*0.5))**2
     K=min(body1.heat_conductivity,body2.heat_conductivity)
     Q=K*S*dT*time
     body1.t+=Q/(body1.mass*body1.heat_capacity)
@@ -107,6 +107,10 @@ def bounce(body1,body2):
         U1x=(U1*_cos(o1-f)*(m1-m2)+2*m2*U2*_cos(o2-f)) / (m1+m2)*_sin(f) + U1*_sin(o1-f)*_sin(f+(pi/2))
         print(o1,o2,f,U1x,U1y)
         body1.speed=[U1x,U1y]
+def thermal_expansion(body1):
+    native_V=(body1.native_radius**3)*(4/3)*pi
+    new_V=native_V*(1+body1.volume_thermal_expansion_k*(self.t-self.first_t))
+    body1.radius=body1.native_radius+((3/4)*new_V/pi)**(1/3)
 
 class World:
     def __init__(self,frequency):
@@ -147,16 +151,19 @@ class World:
 
 
 class Body:
-    def __init__(self,mass,coords,speed,t,charge,name,radius,heat_capacity,heat_conductivity):
+    def __init__(self,mass,coords,speed,t,charge,name,radius,heat_capacity,heat_conductivity,thermal_expansion_k):
         self.mass=mass
         self.coords=coords
         self.speed=speed
-        self.t=t
+        self.first_t=t
+        self.t=self.first_t
         self.charge=charge
         self.name=name
-        self.radius=radius
+        self.native_radius=radius
+        self.radius=self.native_radius
         self.heat_capacity=heat_capacity
         self.heat_conductivity=heat_conductivity # Теплопроводность, не теплоемкость!
+        self.volume_thermal_expansion_k=thermal_expansion_k # КОЭФФИЦИЕНТ ОБЪЕМНОГО ТЕПЛОВОГО РАСШИРЕНИЯ (не линейного!!!)
     def info(self):
         return [self.mass,self.coords,self.speed,self.t,self.charge,self.name,self.radius,self.heat_capacity,self.heat_conductivity]
 
@@ -167,6 +174,7 @@ class Body:
             charge_distribution(self,body)
             temp_distribution(self,body,time)
             bounce(self,body)
+        thermal_expansion(body1)
         forces.append(get_Hewton_gravitation_force(self,body))
         forces.append(get_Coulomb_electrostatic_force(self,body))
         return sum_proections(forces)
