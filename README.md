@@ -1,7 +1,6 @@
-# PhyBox
+# PhyBox 💫
 
-![3741](https://user-images.githubusercontent.com/52743561/165135260-84ed6a06-6135-4f2c-83a0-46867d4e850c.gif)
-![3Iga](https://user-images.githubusercontent.com/52743561/165135378-c8384bb5-e0d7-452d-8557-e187514e84c0.gif)
+![image](https://user-images.githubusercontent.com/52743561/165137228-9d618cda-5e6e-4210-ac24-9dc7acce2277.png)
 
 ## Physical simulator on python
 Короче я год пилил эту штуку под разными видами:
